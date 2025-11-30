@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Page</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap 5.3.8 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          crossorigin="anonymous">
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .content-wrapper {
+            max-width: 1100px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Верхний бар -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <span class="navbar-text">
+            <span id="currentUserEmail"></span>
+            &nbsp;with roles:
+            <span id="currentUserRoles"></span>
+        </span>
+
+        <form action="/logout" method="post" class="ms-auto mb-0">
+            <button type="submit" class="btn btn-outline-light btn-sm">Logout</button>
+        </form>
+    </div>
+</nav>
+
+<div class="container-fluid mt-3">
+    <div class="row justify-content-start">
+        <!-- Сайдбар -->
+        <div class="col-12 col-md-2 mb-3 mb-md-0">
+            <ul class="nav nav-pills flex-md-column">
+                <!-- Admin-ссылка показывается только если у пользователя есть ROLE_ADMIN -->
+                <li class="nav-item" id="adminNavItem" style="display: none;">
+                    <a class="nav-link" href="/admin.html">Admin</a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link active" aria-current="page" href="/user.html">User</a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Контент -->
+        <div class="col-12 col-md-10 content-wrapper">
+            <h1 class="mb-3">User information-page</h1>
+
+            <div class="card">
+                <div class="card-header fw-bold">
+                    About user
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped mb-0">
+                        <thead>
+                        <tr>
+                            <th scope="col">ID</th>
+                            <th scope="col">First Name</th>
+                            <th scope="col">Last Name</th>
+                            <th scope="col">Age</th>
+                            <th scope="col">Email</th>
+                            <th scope="col">Role</th>
+                        </tr>
+                        </thead>
+                        <tbody id="userInfoBody">
+                        <!-- строка будет заполнена через JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        crossorigin="anonymous"></script>
+
+<script>
+    function normalizeRoleName(roleName) {
+        return roleName.replace('ROLE_', '');
+    }
+
+    function rolesToString(roles) {
+        if (!roles) return '';
+        return roles
+            .map(r => normalizeRoleName(r.name))
+            .sort((a, b) => {
+                if (a === 'ADMIN' && b !== 'ADMIN') return -1;
+                if (b === 'ADMIN' && a !== 'ADMIN') return 1;
+                return a.localeCompare(b);
+            })
+            .join(' ');
+    }
+
+    async function loadCurrentUser() {
+        try {
+            const res = await fetch('/api/user/me');
+            if (!res.ok) {
+                console.error('Ошибка при загрузке пользователя:', res.status);
+                return;
+            }
+            const user = await res.json();
+
+            // Верхний бар
+            document.getElementById('currentUserEmail').textContent = user.email || '';
+            document.getElementById('currentUserRoles').textContent = rolesToString(user.roles);
+
+            // Показать ссылку Admin, если есть ROLE_ADMIN
+            const hasAdminRole = (user.roles || []).some(r => r.name === 'ROLE_ADMIN');
+            if (hasAdminRole) {
+                document.getElementById('adminNavItem').style.display = 'block';
+            }
+
+            // Таблица "About user"
+            const tbody = document.getElementById('userInfoBody');
+            tbody.innerHTML = '';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${user.id ?? ''}</td>
+                <td>${user.name ?? ''}</td>
+                <td>${user.surname ?? ''}</td>
+                <td>${user.age ?? ''}</td>
+                <td>${user.email ?? ''}</td>
+                <td>${rolesToString(user.roles)}</td>
+            `;
+            tbody.appendChild(tr);
+
+        } catch (e) {
+            console.error('Ошибка при загрузке текущего пользователя:', e);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadCurrentUser();
+    });
+</script>
+
+</body>
+</html>
