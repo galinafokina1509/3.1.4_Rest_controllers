@@ -21,6 +21,18 @@
         .input-highlight:focus {
             background-color: #fff9d6;
         }
+
+        /* делаем окно delete поменьше */
+        .delete-modal-dialog {
+            max-width: 500px;
+        }
+
+        /* более заметный серый фон в readonly-полях delete */
+        .form-control.bg-light.text-muted,
+        .form-select.bg-light.text-muted {
+            background-color: #e9ecef !important; /* поярче серый */
+            color: #6c757d !important;
+        }
     </style>
 </head>
 <body>
@@ -241,36 +253,70 @@
     </div>
 </div>
 
-<!-- Delete modal -->
+<!-- Delete modal (по макету) -->
 <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered delete-modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Delete user</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"
                         aria-label="Close"></button>
             </div>
+
             <div class="modal-body">
+                <!-- скрытое поле для id -->
                 <input type="hidden" id="deleteUserId">
 
-                <p class="text-center">Are you sure you want to delete this user?</p>
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-center d-block">ID</label>
+                    <input type="text"
+                           class="form-control bg-light text-muted"
+                           id="deleteUserIdInput"
+                           readonly>
+                </div>
 
-                <div class="mb-2">
-                    <strong>ID:</strong> <span id="deleteUserIdText"></span>
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-center d-block">First name</label>
+                    <input type="text"
+                           class="form-control bg-light text-muted"
+                           id="deleteUserNameInput"
+                           readonly>
                 </div>
-                <div class="mb-2">
-                    <strong>First name:</strong> <span id="deleteUserName"></span>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-center d-block">Last name</label>
+                    <input type="text"
+                           class="form-control bg-light text-muted"
+                           id="deleteUserSurnameInput"
+                           readonly>
                 </div>
-                <div class="mb-2">
-                    <strong>Last name:</strong> <span id="deleteUserSurname"></span>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-center d-block">Age</label>
+                    <input type="number"
+                           class="form-control bg-light text-muted"
+                           id="deleteUserAgeInput"
+                           readonly>
                 </div>
-                <div class="mb-2">
-                    <strong>Email:</strong> <span id="deleteUserEmail"></span>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-center d-block">Email</label>
+                    <input type="email"
+                           class="form-control bg-light text-muted"
+                           id="deleteUserEmailInput"
+                           readonly>
                 </div>
-                <div class="mb-2">
-                    <strong>Roles:</strong> <span id="deleteUserRoles"></span>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-center d-block">Role</label>
+                    <select class="form-select bg-light text-muted"
+                            id="deleteUserRolesSelect"
+                            multiple size="2"
+                            disabled>
+                    </select>
                 </div>
             </div>
+
             <div class="modal-footer">
                 <button type="button"
                         class="btn btn-secondary"
@@ -481,12 +527,24 @@
     // ------- Удаление пользователя -------
 
     function openDeleteModal(user) {
+        // скрытый id для DELETE
         document.getElementById('deleteUserId').value = user.id;
-        document.getElementById('deleteUserIdText').textContent = user.id;
-        document.getElementById('deleteUserName').textContent = user.name;
-        document.getElementById('deleteUserSurname').textContent = user.surname;
-        document.getElementById('deleteUserEmail').textContent = user.email;
-        document.getElementById('deleteUserRoles').textContent = rolesToString(user.roles);
+
+        // readonly-поля
+        document.getElementById('deleteUserIdInput').value = user.id ?? '';
+        document.getElementById('deleteUserNameInput').value = user.name ?? '';
+        document.getElementById('deleteUserSurnameInput').value = user.surname ?? '';
+        document.getElementById('deleteUserAgeInput').value = user.age ?? '';
+        document.getElementById('deleteUserEmailInput').value = user.email ?? '';
+
+        // роли в select (disabled)
+        const select = document.getElementById('deleteUserRolesSelect');
+        select.innerHTML = '';
+        (user.roles || []).forEach(role => {
+            const opt = document.createElement('option');
+            opt.textContent = normalizeRoleName(role.name);
+            select.appendChild(opt);
+        });
 
         if (!deleteUserModalInstance) {
             deleteUserModalInstance = new bootstrap.Modal(document.getElementById('deleteUserModal'));
