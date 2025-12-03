@@ -10,9 +10,11 @@ import preproject.spring_boot_security.model.User;
 import preproject.spring_boot_security.repository.RoleRepository;
 import preproject.spring_boot_security.repository.UserRepository;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -48,37 +50,33 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void createUser(User user, List<Long> roleIds, String rawPassword) {
+    public User createUser(User user) {
+        String rawPassword = user.getPassword();
         if (rawPassword == null || rawPassword.isBlank()) {
             throw new IllegalArgumentException("Password must be provided");
         }
-        if (roleIds == null || roleIds.isEmpty()) {
-            throw new IllegalArgumentException("At least one role must be specified");
-        }
-        Set<Role> roles = roleService.getRolesByIds(roleIds);
+        Set<Role> roles = resolveRolesFromUser(user);
         user.setRoles(roles);
         user.setPassword(bCryptPasswordEncoder.encode(rawPassword));
-        userRepository.save(user);
+        return userRepository.save(user);
     }
 
     @Override
-    public void updateUser(User user, List<Long> roleIds, String rawPassword) {
-        User existing =  getUserById(user.getId());
+    public User updateUser(Long id, User user) {
+        User existing =  getUserById(id);
         existing.setName(user.getName());
         existing.setSurname(user.getSurname());
         existing.setAge(user.getAge());
         existing.setEmail(user.getEmail());
 
-        if (roleIds == null || roleIds.isEmpty()) {
-            throw new IllegalArgumentException("At least one role must be specified");
-        }
-        Set<Role> roles = roleService.getRolesByIds(roleIds);
+        Set<Role> roles = resolveRolesFromUser(user);
         existing.setRoles(roles);
 
+        String rawPassword = user.getPassword();
         if (rawPassword != null && !rawPassword.isBlank()) {
             existing.setPassword(bCryptPasswordEncoder.encode(rawPassword));
         }
-        userRepository.save(existing);
+        return userRepository.save(existing);
     }
 
     @Override
@@ -89,5 +87,13 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         return findByEmail(email);
+    }
+
+    private Set<Role> resolveRolesFromUser(User user) {
+        if (user.getRoles() == null || user.getRoles().isEmpty()) {
+            throw new IllegalArgumentException("At least one role must be specified");
+        }
+        List<Long> roleIds = user.getRoles().stream().map(Role::getId).toList();
+        return roleService.getRolesByIds(roleIds);
     }
 }

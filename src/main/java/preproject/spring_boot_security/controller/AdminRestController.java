@@ -36,24 +36,14 @@ public class AdminRestController {
 
     @PostMapping("/users")
     public ResponseEntity<User> createUser(@RequestBody User user) {
-        List<Long> roleIds = null;
-        if (user.getRoles() != null) {
-            roleIds = user.getRoles().stream().map(Role::getId).collect(Collectors.toList());
-        }
-        userService.createUser(user, roleIds, user.getPassword());
-        return new ResponseEntity<>(user, HttpStatus.CREATED);
+        User created = userService.createUser(user);
+        return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
 
     @PutMapping("/users/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
-        user.setId(id);
-        List<Long> roleIds = null;
-        if (user.getRoles() != null) {
-            roleIds = user.getRoles().stream().map(Role::getId).collect(Collectors.toList());
-        }
-        userService.updateUser(user, roleIds, user.getPassword());
-        User updatedUser = userService.getUserById(id);
-        return ResponseEntity.ok(updatedUser);
+        User updated = userService.updateUser(id, user);
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/users/{id}")
